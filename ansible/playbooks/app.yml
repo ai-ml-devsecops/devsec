@@ -1,0 +1,6 @@
+---
+- name: Configure Django and WebGoat training target
+  hosts: app
+  become: true
+  roles:
+    - app

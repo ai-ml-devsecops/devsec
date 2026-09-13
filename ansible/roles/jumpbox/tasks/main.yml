@@ -1,0 +1,23 @@
+---
+- name: Install Jump Box security tooling
+  ansible.builtin.apt:
+    name:
+      - nmap
+      - nikto
+      - python3-venv
+      - jq
+    state: present
+
+- name: Create lab tool workspace
+  ansible.builtin.file:
+    path: /opt/devsecops-lab
+    state: directory
+    mode: "0755"
+
+- name: Write runtime testing guidance
+  ansible.builtin.copy:
+    dest: /opt/devsecops-lab/TESTING.md
+    mode: "0644"
+    content: |
+      Run security-testing.yml locally with:
+      ansible-playbook -i inventory/runtime.yml playbooks/security-testing.yml --extra-vars "app_host=<runtime-address>"

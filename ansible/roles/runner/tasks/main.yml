@@ -1,0 +1,21 @@
+---
+- name: Install runner prerequisites
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - ca-certificates
+    state: present
+
+- name: Enable Docker
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Record runner registration handoff
+  ansible.builtin.copy:
+    dest: /etc/devsecops-lab-runner.yml
+    mode: "0644"
+    content: |
+      node_role: runner
+      registration_token: "{{ gitlab_runner_token | default('UNSET') }}"

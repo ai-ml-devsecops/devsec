@@ -1,0 +1,23 @@
+---
+- name: Install application prerequisites
+  ansible.builtin.apt:
+    name:
+      - default-jre
+      - python3-venv
+    state: present
+
+- name: Create application workspace
+  ansible.builtin.file:
+    path: /opt/devsecops-app
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Record application deployment handoff
+  ansible.builtin.copy:
+    dest: /opt/devsecops-app/README.txt
+    mode: "0644"
+    content: |
+      Deploy the intentionally vulnerable Django/WebGoat training application here.
+      Keep application credentials and image tags in external variables.

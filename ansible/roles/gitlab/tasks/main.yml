@@ -1,0 +1,16 @@
+---
+- name: Install GitLab prerequisites
+  ansible.builtin.apt:
+    name:
+      - openssh-server
+      - tzdata
+    state: present
+
+- name: Record GitLab installation handoff
+  ansible.builtin.copy:
+    dest: /etc/devsecops-lab-gitlab.yml
+    mode: "0644"
+    content: |
+      # Install GitLab Omnibus here using the pinned package repository for the
+      # selected release. Secrets must be supplied outside version control.
+      node_role: gitlab

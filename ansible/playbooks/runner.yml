@@ -1,0 +1,6 @@
+---
+- name: Configure GitLab Runner node
+  hosts: runner
+  become: true
+  roles:
+    - runner
