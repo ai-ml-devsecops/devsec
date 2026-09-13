@@ -31,5 +31,9 @@ if (-not (Test-Path $venv)) {
 }
 
 $python = Join-Path $venv "Scripts\python.exe"
+if (-not (Test-Path $python)) {
+    throw "The Python virtual environment could not be created at $venv."
+}
+
 & $python -m pip install --disable-pip-version-check --upgrade -r (Join-Path $root "requirements.txt")
 & $python -m ansible --version

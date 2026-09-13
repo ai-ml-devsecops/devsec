@@ -22,14 +22,23 @@ $current = $null
 foreach ($line in Get-Content $sshConfig) {
     if ($line -match "^Host\s+(.+)$") {
         $current = $Matches[1].Trim()
+        $entries[$current] = @{}
         continue
     }
     if ($null -ne $current -and $line -match "^\s*HostName\s+(.+)$") {
-        $entries[$current] = $Matches[1].Trim()
+        $entries[$current]["HostName"] = $Matches[1].Trim()
+        continue
+    }
+    if ($null -ne $current -and $line -match "^\s*Port\s+(.+)$") {
+        $entries[$current]["Port"] = $Matches[1].Trim()
     }
 }
 
-$missing = $nodeNames | Where-Object { -not $entries.ContainsKey($_) }
+$missing = $nodeNames | Where-Object {
+    -not $entries.ContainsKey($_) -or
+    -not $entries[$_].ContainsKey("HostName") -or
+    -not $entries[$_].ContainsKey("Port")
+}
 if ($missing) {
     throw "Could not resolve runtime SSH addresses for: $($missing -join ', ')"
 }
@@ -44,8 +53,10 @@ $yaml = @(
     "      hosts:"
 )
 foreach ($node in $nodeNames) {
+    $entry = $entries[$node]
     $yaml += "        ${node}:"
-    $yaml += "          ansible_host: $($entries[$node])"
+    $yaml += "          ansible_host: $($entry["HostName"])"
+    $yaml += "          ansible_port: $($entry["Port"])"
     $yaml += "          ansible_ssh_private_key_file: .vagrant\machines\$node\virtualbox\private_key"
 }
 $yaml += "    jumpbox:"

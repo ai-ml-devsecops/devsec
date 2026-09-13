@@ -2,7 +2,8 @@
 - name: Install application prerequisites
   ansible.builtin.apt:
     name:
-      - default-jre
+      -       docker.io
+      docker-compose-v2
       - python3-venv
     state: present
 
@@ -14,10 +15,60 @@
     group: root
     mode: "0755"
 
-- name: Record application deployment handoff
+- name: Deploy training application compose definition
   ansible.builtin.copy:
-    dest: /opt/devsecops-app/README.txt
+    dest: /opt/devsecops-app/compose.yml
     mode: "0644"
     content: |
-      Deploy the intentionally vulnerable Django/WebGoat training application here.
-      Keep application credentials and image tags in external variables.
+      services:
+        django:
+          image: python:3.12-slim
+          container_name: devsecops-django
+          restart: unless-stopped
+          working_dir: /app
+          volumes:
+            - /opt/devsecops-app/django:/app
+          command: sh -c "pip install --no-cache-dir -r requirements.txt && python manage.py runserver 0.0.0.0:8000"
+          ports:
+            - "8000:8000"
+        webgoat:
+          image: webgoat/webgoat:v2023.8
+          container_name: devsecops-webgoat
+          restart: unless-stopped
+          ports:
+            - "8080:8080"
+
+- name: Deploy minimal Django training target
+  ansible.builtin.copy:
+    dest: /opt/devsecops-app/django/requirements.txt
+    mode: "0644"
+    content: |
+      Django==5.1.8
+
+- name: Deploy minimal Django application
+  ansible.builtin.copy:
+    dest: /opt/devsecops-app/django/manage.py
+    mode: "0755"
+    content: |
+      import os
+      import sys
+      from django.conf import settings
+      from django.http import JsonResponse
+      from django.urls import path
+      from django.core.management import execute_from_command_line
+      settings.configure(DEBUG=True, SECRET_KEY="devsecops-lab", ROOT_URLCONF=__name__, ALLOWED_HOSTS=["*"], MIDDLEWARE=[])
+      urlpatterns = [path("", lambda request: JsonResponse({"service": "django-training-target"}))]
+      if __name__ == "__main__":
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "__main__")
+          execute_from_command_line(sys.argv)
+
+- name: Start training applications
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - /opt/devsecops-app/compose.yml
+      - up
+      - -d
+  changed_when: true

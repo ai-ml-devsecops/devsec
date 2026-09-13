@@ -6,6 +6,7 @@
       - nikto
       - python3-venv
       - jq
+      - ansible-core
     state: present
 
 - name: Create lab tool workspace
@@ -14,10 +15,26 @@
     state: directory
     mode: "0755"
 
-- name: Write runtime testing guidance
+- name: Write runtime security test
+  ansible.builtin.copy:
+    dest: /opt/devsecops-lab/security-testing.yml
+    mode: "0644"
+    content: |
+      ---
+      - name: Check Django training target
+        hosts: localhost
+        connection: local
+        tasks:
+          - name: Check application endpoint
+            ansible.builtin.uri:
+              url: "http://{{ hostvars[groups['app'][0]]['ansible_host'] }}:8000"
+              status_code: 200
+              timeout: 10
+
+- name: Write Jump Box testing instructions
   ansible.builtin.copy:
     dest: /opt/devsecops-lab/TESTING.md
     mode: "0644"
     content: |
-      Run security-testing.yml locally with:
-      ansible-playbook -i inventory/runtime.yml playbooks/security-testing.yml --extra-vars "app_host=<runtime-address>"
+      Run from this node:
+      ansible-playbook /opt/devsecops-lab/security-testing.yml

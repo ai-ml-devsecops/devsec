@@ -1,16 +1,42 @@
 ---
-- name: Install GitLab prerequisites
-  ansible.builtin.apt:
-    name:
-      - openssh-server
-      - tzdata
-    state: present
+- name: Create GitLab workspace
+  ansible.builtin.file:
+    path: /opt/devsecops-gitlab
+    state: directory
+    mode: "0755"
 
-- name: Record GitLab installation handoff
+- name: Deploy GitLab container definition
   ansible.builtin.copy:
-    dest: /etc/devsecops-lab-gitlab.yml
+    dest: /opt/devsecops-gitlab/compose.yml
     mode: "0644"
     content: |
-      # Install GitLab Omnibus here using the pinned package repository for the
-      # selected release. Secrets must be supplied outside version control.
-      node_role: gitlab
+      services:
+        gitlab:
+          image: gitlab/gitlab-ce:17.11.6-ce.0
+          container_name: devsecops-gitlab
+          hostname: gitlab
+          restart: unless-stopped
+          shm_size: "256m"
+          ports:
+            - "80:80"
+            - "443:443"
+            - "2222:22"
+          volumes:
+            - /opt/devsecops-gitlab/config:/etc/gitlab
+            - /opt/devsecops-gitlab/logs:/var/log/gitlab
+            - /opt/devsecops-gitlab/data:/var/opt/gitlab
+          environment:
+            GITLAB_OMNIBUS_CONFIG: |
+              external_url 'http://{{ hostvars[groups["gitlab"][0]]["ansible_host"] }}'
+              gitlab_rails['initial_root_password'] = '{{ gitlab_initial_root_password | default("ChangeMeLab123!") }}'
+
+- name: Start GitLab
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - /opt/devsecops-gitlab/compose.yml
+      - up
+      - -d
+  changed_when: true
