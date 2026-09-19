@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
   config.ssh.insert_key = true
 
   nodes = {
-    "gitlab" => { memory: 6144, cpus: 4 },
+    "gitlab" => { memory: 12288, cpus: 4 },
     "runner" => { memory: 4096, cpus: 2 },
     "app" => { memory: 3072, cpus: 2 },
     "jumpbox" => { memory: 4096, cpus: 2 }
@@ -17,7 +17,6 @@ Vagrant.configure("2") do |config|
   nodes.each do |name, resources|
     config.vm.define name do |node|
       node.vm.hostname = name
-      # DHCP keeps addresses ephemeral; inventory is generated from SSH config.
       node.vm.network "private_network", type: "dhcp"
       node.vm.provider "virtualbox" do |vb|
         vb.name = "devsecops-#{name}"
