@@ -3,3 +3,5 @@ __pycache__/
 *.py[cod]
 .vagrant/
 ansible/inventory/runtime.yml
+
+gitlab-registration.json
