@@ -1,67 +1,67 @@
-# ??? DevSecOps Training Lab
+# DevSecOps Training Lab
 
-This repository defines a disposable four-node DevSecOps training lab for a Windows 11 host running VirtualBox.
+This repository defines a disposable four-node DevSecOps training lab running natively over VMware Workstation Pro.
 
-## ?? Lab Topology
+## Lab Topology
+
 | Node | Role | Purpose | Services |
 | --- | --- | --- | --- |
 | `gitlab` | **SCM & CI/CD** | Source code, Pipelines, Registry | GitLab CE |
 | `runner` | **Worker** | Executes CI/CD jobs | GitLab Runner |
-| `app` | **Target** | Intentionally vulnerable apps | Django, WebGoat |
-| `jumpbox` | **Workstation** | Security testing & management | Ansible, Nmap, Nikto |
+| `app` | **Target** | Vulnerable Django Application | django.nv |
+| `jumpbox` | **Workstation** | Security testing & management | Docker Tools |
 
-## ?? Reproduction Guide (Step-by-Step)
+## Setup & Execution Guide
 
 ### 1. Boot the Environment
-Open an elevated PowerShell terminal in the project root:
+From `C:\Users\ai-ml\projects-local\devsec` in an elevated PowerShell terminal, run:
 ```powershell
-vagrant up
+vagrant up --provider=vmware_desktop
 ```
 
 ### 2. Install the Engine (Docker)
-Since we are using a lean setup, Docker must be installed on the nodes. Run this for every node (`gitlab`, `app`, `runner`, `jumpbox`):
+Docker must be present across nodes. Run this installation logic for every node (`gitlab`, `app`, `runner`, `jumpbox`):
 ```powershell
 vagrant ssh <node_name> -c "sudo apt-get update && sudo apt-get install -y docker.io"
 ```
 
-### 3. Deploy the Services
-Run these commands to launch the platforms as containers:
+### 3. Deploy Core Platforms
 
 **GitLab Server:**
 ```powershell
 vagrant ssh gitlab -c "sudo docker run -d --name gitlab -p 80:80 -p 443:443 -p 2222:22 gitlab/gitlab-ce:latest"
 ```
 
-**Vulnerable App (WebGoat):**
+**Production Target (django.nv):**
 ```powershell
-vagrant ssh app -c "sudo docker run -d --name webgoat -p 8080:8080 webgoat/webgoat"
+# Clone and spin up the target application directly on the app server
+vagrant ssh app -c "git clone https://practical-devsecops.training && cd django.nv && sudo docker build -t django-app . && sudo docker run -d --name django_nv -p 8000:8000 django-app"
 ```
 
-### 4. Accessing the Lab
-Get the IP addresses:
+### 4. Lab Ingress & Credentials
+Run `hostname -I` via Vagrant SSH to discover node IP addresses:
 ```powershell
 vagrant ssh gitlab -c "hostname -I"
 vagrant ssh app -c "hostname -I"
 ```
 
-**URLs:**
-*   **GitLab:** `http://<gitlab-ip>`
-*   **WebGoat:** `http://<app-ip>:8080/WebGoat`
+*   **GitLab Dashboard:** `http://<gitlab-ip>`
+*   **Target Application:** `http://<app-ip>:8000`
 
-**GitLab Initial Password:**
+**Fetch Root Password for GitLab:**
 ```powershell
 vagrant ssh gitlab -c "sudo docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password"
 ```
 
-## ??? Jump Box Usage
-The Jump Box is your attack station. You can run security tools as disposable containers:
+## Security Evaluation (Jump Box)
+Establish a session on your attack node to test the application target using containerized tools:
 ```powershell
 vagrant ssh jumpbox
-# Inside Jump Box:
-sudo docker run --rm nikto -h http://<app-ip>:8080
+
+# Inside Jump Box container execution test:
+sudo docker run --rm hysnsec/nikto -h http://<app-ip>:8000
 ```
 
-## ?? Hardware Requirements
-To prevent "Zombie" freezes, the following allocation is recommended in the `Vagrantfile`:
-*   **GitLab:** 12GB RAM / 4 CPUs
-*   **Others:** 4GB RAM / 2 CPUs
+## Environment Management
+*   **Stop Workloads:** `vagrant halt`
+*   **Wipe Lab Infrastructure:** `vagrant destroy -f`
