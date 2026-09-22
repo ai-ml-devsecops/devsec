@@ -48,7 +48,7 @@ $yamlExt = @(
     "all:"
     "  vars:"
     "    ansible_user: vagrant"
-    "    ansible_ssh_private_key_file: .vagrant\machines\jumpbox\virtualbox\private_key"
+    "    ansible_ssh_private_key_file: .vagrant\machines\jumpbox\vmware_desktop\private_key"
     "  children:"
     "    lab:"
     "      hosts:"
@@ -58,7 +58,7 @@ foreach ($node in $nodeNames) {
     $yamlExt += "        ${node}:"
     $yamlExt += "          ansible_host: $($entry["HostName"])"
     $yamlExt += "          ansible_port: $($entry["Port"])"
-    $yamlExt += "          ansible_ssh_private_key_file: .vagrant\machines\$node\virtualbox\private_key"
+    $yamlExt += "          ansible_ssh_private_key_file: .vagrant\machines\$node\vmware_desktop\private_key"
 }
 $yamlExt += "    jumpbox:"
 $yamlExt += "      hosts:"
@@ -69,7 +69,7 @@ $yamlInt = @(
     "all:"
     "  vars:"
     "    ansible_user: vagrant"
-    "  children:"
+  "  children:"
     "    lab:"
     "      hosts:"
 )

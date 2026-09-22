@@ -2,6 +2,10 @@
 
 This document provides step-by-step instructions to initialize a clean Windows 11 host environment and deploy your local four-node training lab using VMware.
 
+## Response Style
+- Always give short, terse, and minimal replies.
+- Do not include conversational preambles.
+
 ## Step 1: Install Host Hypervisor & Automation Tools
 Open PowerShell as an Administrator and execute the following commands to install the required system binaries via Winget:
 ```powershell
@@ -24,15 +28,18 @@ python -m venv .venv
 .\.venv\Scripts\pip install -r requirements.txt
 ```
 
-## Step 3: Configure Scripts and Boot the Fleet
+## Step 3: Install the Vagrant VMware Plugin
+Before Vagrant can interact with VMware Workstation Pro, you must download the desktop provider interface plugin:
+```powershell
+vagrant plugin install vagrant-vmware-desktop
+```
+
+## Step 4: Configure Scripts and Boot the Fleet
 Run your validation scripts to confirm paths, then kick off the environment provision:
 ```powershell
-# Verify system paths match VMware requirements
-.\(\scripts\check-\)prereqs.ps1 -InstallMissing
+# Verify system paths match VMware requirements (using your attached script)
+.\scripts\setup-check.ps1 -InstallMissing
 
 # Boot the lab nodes using the VMware Desktop provider engine
-vagrant up --provider=vmware_desktop
-
-# Build host configurations (skip inventory deployment tasks for now)
-.\scripts\generate-inventory.ps1 -OutputPath .\inventories\runtime-external.yml
+.\scripts\boot-lab.ps1
 ```

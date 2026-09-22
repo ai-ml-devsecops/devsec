@@ -7,7 +7,7 @@ $root = Split-Path -Parent $PSScriptRoot
 Push-Location $root
 try {
     Write-Host "Booting lab VMs..." -ForegroundColor Cyan
-    & vagrant up --provider=virtualbox
+    & vagrant up --provider=vmware_desktop
 
     Write-Host "`n--- Lab Access Info ---" -ForegroundColor Green
     $nodes = @("gitlab", "runner", "app", "jumpbox")

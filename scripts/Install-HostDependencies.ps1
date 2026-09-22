@@ -9,8 +9,8 @@ $venv = Join-Path $root ".venv"
 
 # Mapping of command names to their typical installation directories
 $CommonPaths = @{
-    "VBoxManage" = "C:\Program Files\Oracle\VirtualBox"
-    "vagrant"    = @("C:\Program Files\Vagrant\bin", "C:\Hashicorp\Vagrant\bin")
+    "vmrun"   = "C:\Program Files (x86)\VMware\VMware Workstation"
+    "vagrant" = @("C:\Program Files\Vagrant\bin", "C:\Hashicorp\Vagrant\bin")
 }
 
 function Ensure-Command([string]$Name, [string]$PackageId, [string]$InstallHint) {
@@ -65,7 +65,7 @@ function Ensure-Command([string]$Name, [string]$PackageId, [string]$InstallHint)
     }
 }
 
-Ensure-Command "VBoxManage" "Oracle.VirtualBox" "Install VirtualBox 7.x."
+Ensure-Command "vmrun" "VMware.WorkstationPro" "Install VMware Workstation Pro."
 Ensure-Command "vagrant" "Hashicorp.Vagrant" "Install Vagrant 2.4.x."
 Ensure-Command "py" "Python.Python.3.11" "Install Python 3.11+."
 
@@ -80,10 +80,6 @@ if (-not (Test-Path $python)) {
 
 & $python -m pip install --disable-pip-version-check --upgrade -r (Join-Path $root "requirements.txt")
 
-# Windows Compatibility Fix:
-# Ansible-core triggers a Unix-specific 'check_blocking_io' error when run on Windows.
-# Since we use the host only to trigger remote runs, we verify installation by 
-# checking for the presence of the executables rather than executing them.
 $ansibleExec = Join-Path $venv "Scripts\ansible-playbook.exe"
 if (Test-Path $ansibleExec) {
     Write-Host "Ansible installation verified (Executable found at $ansibleExec)." -ForegroundColor Green
