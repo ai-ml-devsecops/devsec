@@ -16,7 +16,6 @@ Vagrant.configure("2") do |config|
   nodes = {
     # Total reservation: 16 GiB / 8 vCPUs. This leaves sufficient RAM for
     # Windows, VirtualBox, and scans running inside the lab.
-    "gitlab" => { memory: 8192, cpus: 3 },
     "runner" => { memory: 3072, cpus: 2 },
     "app" => { memory: 2048, cpus: 1 },
     "jumpbox" => { memory: 3072, cpus: 2 }
