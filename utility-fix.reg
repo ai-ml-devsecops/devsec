@@ -1,0 +1,10 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.]
+"Core"="VMware Workstation"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware Workstation]
+"InstallPath"="C:\\Program Files\\VMware\\VMware Workstation\\"
+"ProductVersion"="26.0.0.25388281"
+
+; temp fix until issue#177 is closed https://github.com/hashicorp/vagrant-vmware-desktop/issues/177#issuecomment-4546654641
