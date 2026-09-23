@@ -50,8 +50,7 @@ $yamlExt = @(
     "    ansible_user: vagrant"
     "    ansible_ssh_private_key_file: .vagrant\machines\jumpbox\vmware_desktop\private_key"
     "  children:"
-    "    lab:"
-    "      hosts:"
+t    "      hosts:"
 )
 foreach ($node in $nodeNames) {
     $entry = $entries[$node]

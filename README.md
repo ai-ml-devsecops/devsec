@@ -53,6 +53,20 @@ vagrant ssh app -c "hostname -I"
 vagrant ssh gitlab -c "sudo docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password"
 ```
 
+### 5. Create a Group and Project
+Set the GitLab credentials in the current PowerShell session, then run the browser
+automation from the repository root:
+```powershell
+$env:GITLAB_USERNAME = "root"
+$env:GITLAB_PASSWORD = "<password>"
+$env:GITLAB_GROUP_NAME = "training"
+$env:GITLAB_PROJECT_NAME = "sample-app"
+.\.venv\Scripts\python.exe .\scripts\create-gitlab-group-project.py
+```
+
+Use `--headed` to watch the browser, or override the default GitLab URL with
+`--url`.
+
 ## Security Evaluation (Jump Box)
 Establish a session on your attack node to test the application target using containerized tools:
 ```powershell
