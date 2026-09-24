@@ -1,0 +1,58 @@
+---
+- name: Create runner workspace
+  ansible.builtin.file:
+    path: /opt/devsecops-runner
+    state: directory
+    mode: "0755"
+
+- name: Deploy GitLab Runner container definition
+  ansible.builtin.copy:
+    dest: /opt/devsecops-runner/compose.yml
+    mode: "0644"
+    content: |
+      services:
+        runner:
+          image: gitlab/gitlab-runner:v17.11.0
+          container_name: devsecops-runner
+          restart: unless-stopped
+          volumes:
+            - /opt/devsecops-runner/config:/etc/gitlab-runner
+            - /var/run/docker.sock:/var/run/docker.sock
+
+- name: Start GitLab Runner
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - /opt/devsecops-runner/compose.yml
+      - up
+      - -d
+  changed_when: true
+
+- name: Check whether the runner is already registered
+  ansible.builtin.stat:
+    path: /opt/devsecops-runner/config/config.toml
+  register: runner_config
+
+- name: Register the runner against the local GitLab instance
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - devsecops-runner
+      - gitlab-runner
+      - register
+      - --non-interactive
+      - --url
+      - "http://{{ hostvars['gitlab']['ansible_host'] }}"
+      - --token
+      - "{{ hostvars['gitlab']['gitlab_runner_auth_token'] }}"
+      - --executor
+      - docker
+      - --docker-image
+      - docker:20.10
+      - --docker-privileged
+      - --description
+      - devsecops-lab-runner
+  when: not runner_config.stat.exists

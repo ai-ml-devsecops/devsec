@@ -1,0 +1,6 @@
+---
+- name: Configure django.nv training target
+  hosts: app
+  become: true
+  roles:
+    - app

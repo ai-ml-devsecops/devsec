@@ -1,0 +1,21 @@
+---
+- name: Trigger and verify the first pipeline run
+  hosts: gitlab
+  become: true
+  tasks:
+    - name: Wait for the runner to come online and run the first pipeline
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /opt/devsecops-gitlab/scripts/setup-gitlab-api.py
+          - --url
+          - http://localhost
+          - --token
+          - "{{ gitlab_api_token }}"
+          - --trigger-pipeline
+      register: first_pipeline_result
+      changed_when: true
+
+    - name: Show first pipeline result
+      ansible.builtin.debug:
+        var: first_pipeline_result.stdout_lines

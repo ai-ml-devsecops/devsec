@@ -13,59 +13,40 @@ This repository defines a disposable four-node DevSecOps training lab running na
 
 ## Setup & Execution Guide
 
-### 1. Boot the Environment
-From `C:\Users\ai-ml\projects-local\devsec` in an elevated PowerShell terminal, run:
+### 1. One-time host setup
 ```powershell
-vagrant up --provider=vmware_desktop
+.\scripts\Install-HostDependencies.ps1 -InstallMissing
 ```
 
-### 2. Install the Engine (Docker)
-Docker must be present across nodes. Run this installation logic for every node (`gitlab`, `app`, `runner`, `jumpbox`):
+### 2. Start the lab
 ```powershell
-vagrant ssh <node_name> -c "sudo apt-get update && sudo apt-get install -y docker.io"
+.\scripts\Start-Lab.ps1
 ```
+On the first run this fully provisions the lab: boots the four VMs, runs the Ansible
+playbooks (from `ansible/`, executed on the `jumpbox` node, which acts as the Ansible
+controller since Windows cannot run `ansible-playbook` directly), deploys GitLab with
+persistent storage, generates and validates an ephemeral API token, imports
+`pdso/django.nv` with Auto DevOps enabled, registers a project runner, and triggers the
+first pipeline run. It then snapshots all four VMs as `initial-ready`.
 
-### 3. Deploy Core Platforms
+Subsequent runs restore that snapshot instead of re-provisioning, for a fast (~5-10 min)
+start. Two switches control this:
+*   `.\scripts\Start-Lab.ps1 -Reset` — revert to the `initial-ready` snapshot even if the
+    lab is already running.
+*   `.\scripts\Start-Lab.ps1 -Rebuild` — destroy the VMs and fully re-provision from
+    scratch (use after changing the Vagrantfile, playbooks, or scripts).
 
-**GitLab Server:**
-```powershell
-vagrant ssh gitlab -c "sudo docker run -d --name gitlab -p 80:80 -p 443:443 -p 2222:22 gitlab/gitlab-ce:latest"
-```
-
-**Production Target (django.nv):**
-```powershell
-# Clone and spin up the target application directly on the app server
-vagrant ssh app -c "git clone https://practical-devsecops.training && cd django.nv && sudo docker build -t django-app . && sudo docker run -d --name django_nv -p 8000:8000 django-app"
-```
-
-### 4. Lab Ingress & Credentials
-Run `hostname -I` via Vagrant SSH to discover node IP addresses:
-```powershell
-vagrant ssh gitlab -c "hostname -I"
-vagrant ssh app -c "hostname -I"
-```
+### 3. Lab Ingress & Credentials
+`Start-Lab.ps1` prints each node's IP address at the end of every run.
 
 *   **GitLab Dashboard:** `http://<gitlab-ip>`
+*   **GitLab project:** `http://<gitlab-ip>/pdso/django.nv`
 *   **Target Application:** `http://<app-ip>:8000`
 
-**Fetch Root Password for GitLab:**
+**Fetch the root password for GitLab:**
 ```powershell
-vagrant ssh gitlab -c "sudo docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password"
+vagrant ssh gitlab -c "sudo docker exec devsecops-gitlab grep 'Password:' /etc/gitlab/initial_root_password"
 ```
-
-### 5. Create a Group and Project
-Set the GitLab credentials in the current PowerShell session, then run the browser
-automation from the repository root:
-```powershell
-$env:GITLAB_USERNAME = "root"
-$env:GITLAB_PASSWORD = "<password>"
-$env:GITLAB_GROUP_NAME = "training"
-$env:GITLAB_PROJECT_NAME = "sample-app"
-.\.venv\Scripts\python.exe .\scripts\create-gitlab-group-project.py
-```
-
-Use `--headed` to watch the browser, or override the default GitLab URL with
-`--url`.
 
 ## Security Evaluation (Jump Box)
 Establish a session on your attack node to test the application target using containerized tools:

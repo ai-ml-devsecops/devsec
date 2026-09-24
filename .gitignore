@@ -1,6 +1,7 @@
-﻿ansible.zip
-.venv/
+﻿.venv/
 .vagrant/
+.staging/
 gitlab-registration.json
 __pycache__/
 *.py[cod]
+ansible/inventory/runtime.yml

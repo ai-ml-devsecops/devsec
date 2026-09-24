@@ -1,0 +1,50 @@
+---
+- name: Install application prerequisites
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+      - git
+    state: present
+
+- name: Create application workspace
+  ansible.builtin.file:
+    path: /opt/devsecops-app
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Clone django.nv from the upstream training source
+  ansible.builtin.git:
+    repo: https://gitlab.practical-devsecops.training/pdso/django.nv.git
+    dest: /opt/devsecops-app/django.nv
+    version: main
+    force: true
+
+- name: Build the django.nv container image
+  ansible.builtin.command:
+    argv:
+      - docker
+      - build
+      - -t
+      - django-nv
+      - /opt/devsecops-app/django.nv
+  changed_when: true
+
+- name: Run the django.nv training target
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - -d
+      - --name
+      - devsecops-django
+      - --restart
+      - unless-stopped
+      - -p
+      - "8000:8000"
+      - django-nv
+  register: django_run
+  changed_when: true
+  failed_when: django_run.rc != 0 and 'is already in use' not in django_run.stderr
