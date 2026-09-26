@@ -9,7 +9,7 @@ $venv = Join-Path $root ".venv"
 
 # Mapping of command names to their typical installation directories
 $CommonPaths = @{
-    "vmrun"   = "C:\Program Files (x86)\VMware\VMware Workstation"
+    "vmrun"   = @("C:\Program Files\VMware\VMware Workstation", "C:\Program Files (x86)\VMware\VMware Workstation")
     "vagrant" = @("C:\Program Files\Vagrant\bin", "C:\Hashicorp\Vagrant\bin")
 }
 

@@ -17,8 +17,7 @@ from urllib.request import Request, urlopen
 DEFAULT_URL = "http://192.168.26.128"
 DEFAULT_GROUP = "pdso"
 DEFAULT_PROJECT = "django.nv"
-DEFAULT_SOURCE = ""
-https://gitlab.practical-devsecops.training/pdso/django.nv.git
+DEFAULT_SOURCE = "https://gitlab.practical-devsecops.training/pdso/django.nv.git"
 
 class GitLabError(RuntimeError):
     """An actionable GitLab API error."""

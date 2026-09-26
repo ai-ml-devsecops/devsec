@@ -6,8 +6,8 @@
   roles:
     - common
 
+- import_playbook: jumpbox.yml
 - import_playbook: gitlab.yml
 - import_playbook: runner.yml
 - import_playbook: first-pipeline.yml
 - import_playbook: app.yml
-- import_playbook: jumpbox.yml
