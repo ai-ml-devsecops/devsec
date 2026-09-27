@@ -5,6 +5,7 @@
       - nmap
       - nikto
       - python3-venv
+      - python3-pip
       - jq
       - ansible-core
     state: present
