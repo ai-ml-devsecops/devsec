@@ -95,11 +95,19 @@ function Invoke-FullProvision {
     & vagrant ssh jumpbox -c "cd $remoteRoot/ansible && ansible-playbook -i inventory/runtime.yml playbooks/site.yml"
     if ($LASTEXITCODE -ne 0) { throw "Ansible bootstrap failed. Fix the reported task and re-run Start-Lab.ps1." }
 
+    Write-Host "Halting lab VMs before snapshotting..." -ForegroundColor Cyan
+    & vagrant halt -f
+    if ($LASTEXITCODE -ne 0) { throw "Failed to halt the lab before snapshotting." }
+
     Write-Host "Snapshotting the lab as '$snapshotName'..." -ForegroundColor Cyan
     foreach ($node in $nodes) {
         & vagrant snapshot save $node $snapshotName --force
         if ($LASTEXITCODE -ne 0) { throw "Failed to snapshot '$node'." }
     }
+
+    Write-Host "Restarting lab VMs..." -ForegroundColor Cyan
+    & vagrant up --provider=vmware_desktop
+    if ($LASTEXITCODE -ne 0) { throw "vagrant up failed after snapshotting." }
 }
 
 Push-Location $root
