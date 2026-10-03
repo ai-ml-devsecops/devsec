@@ -3,7 +3,9 @@ param(
     # Wipe the VMs and fully re-provision from scratch, then re-snapshot.
     [switch]$Rebuild,
     # Revert to the last known-good snapshot even if the lab is already running.
-    [switch]$Reset
+    [switch]$Reset,
+    # Restart only the jumpbox instead of restoring every lab VM.
+    [switch]$RestartJumpbox
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +14,10 @@ $nodes = @("gitlab", "runner", "app", "jumpbox")
 $labNodes = @("gitlab", "runner", "app")
 $snapshotName = "initial-ready"
 $remoteRoot = "/opt/devsecops-lab"
+
+if ($RestartJumpbox -and ($Rebuild -or $Reset)) {
+    throw "-RestartJumpbox cannot be combined with -Rebuild or -Reset."
+}
 
 function Get-NodeIp([string]$Node) {
     $raw = & vagrant ssh $Node -c "hostname -I"
@@ -112,7 +118,12 @@ function Invoke-FullProvision {
 
 Push-Location $root
 try {
-    if ($Rebuild) {
+    if ($RestartJumpbox) {
+        Write-Host "Force-restarting only the jumpbox..." -ForegroundColor Cyan
+        & vagrant reload jumpbox -f
+        if ($LASTEXITCODE -ne 0) { throw "The jumpbox restart failed." }
+    }
+    elseif ($Rebuild) {
         Write-Host "Destroying existing VMs for a clean rebuild..." -ForegroundColor Yellow
         & vagrant destroy -f
         Invoke-FullProvision

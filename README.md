@@ -36,6 +36,28 @@ start. Two switches control this:
 *   `.\scripts\Start-Lab.ps1 -Rebuild` — destroy the VMs and fully re-provision from
     scratch (use after changing the Vagrantfile, playbooks, or scripts).
 
+### Restart a timed-out jumpbox
+
+If `vagrant ssh jumpbox` hangs and the VMware console is black and unresponsive,
+the entire guest is frozen. Press `Ctrl+C`, then force-restart only the jumpbox:
+```powershell
+.\scripts\Start-Lab.ps1 -RestartJumpbox
+```
+
+This does not restore or restart GitLab, runner, or app. No GUI login or interaction
+is required for the jumpbox to remain running.
+
+Check connectivity:
+```powershell
+vagrant status jumpbox
+vagrant ssh jumpbox -c "hostname; hostname -I"
+```
+
+Only if SSH works and the desktop alone is black, restart the display manager:
+```powershell
+vagrant ssh jumpbox -c "sudo systemctl restart lightdm"
+```
+
 ### 3. Lab Ingress & Credentials
 `Start-Lab.ps1` prints each node's IP address at the end of every run.
 
