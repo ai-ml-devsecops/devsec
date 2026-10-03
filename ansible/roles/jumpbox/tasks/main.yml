@@ -20,6 +20,16 @@
     deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     state: present
 
+- name: Prevent the jumpbox from suspending while idle
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+  loop:
+    - sleep.target
+    - suspend.target
+    - hibernate.target
+    - hybrid-sleep.target
+
 - name: Configure automatic graphical login for the jumpbox
   ansible.builtin.copy:
     dest: /etc/lightdm/lightdm.conf.d/50-jumpbox.conf
