@@ -59,6 +59,33 @@
     group: root
     mode: "0700"
 
+- name: Check application certificate
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - x509
+      - -checkend
+      - "0"
+      - -noout
+      - -in
+      - /etc/nginx/tls/app.crt
+  register: app_certificate_check
+  changed_when: false
+  failed_when: false
+
+- name: Check application private key
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - pkey
+      - -check
+      - -noout
+      - -in
+      - /etc/nginx/tls/app.key
+  register: app_private_key_check
+  changed_when: false
+  failed_when: false
+
 - name: Generate self-signed application certificate
   ansible.builtin.command:
     argv:
@@ -76,7 +103,7 @@
       - /etc/nginx/tls/app.crt
       - -subj
       - "/CN={{ ansible_host }}"
-    creates: /etc/nginx/tls/app.crt
+  when: app_certificate_check.rc != 0 or app_private_key_check.rc != 0
   notify: Restart Nginx
 
 - name: Configure Nginx TLS reverse proxy

@@ -8,17 +8,24 @@
       - python3-pip
       - jq
       - ansible-core
-      - xfce4
-      - lightdm
-      - dbus-x11
     state: present
   environment:
     DEBIAN_FRONTEND: noninteractive
 
-- name: Install Google Chrome
-  ansible.builtin.apt:
-    deb: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    state: present
+- name: Read the default boot target
+  ansible.builtin.command: systemctl get-default
+  register: jumpbox_boot_target
+  changed_when: false
+
+- name: Boot the jumpbox in console mode
+  ansible.builtin.command: systemctl set-default multi-user.target
+  when: jumpbox_boot_target.stdout != 'multi-user.target'
+
+- name: Keep SSH available on the headless jumpbox
+  ansible.builtin.systemd:
+    name: ssh
+    enabled: true
+    state: started
 
 - name: Prevent the jumpbox from suspending while idle
   ansible.builtin.systemd:
@@ -29,32 +36,6 @@
     - suspend.target
     - hibernate.target
     - hybrid-sleep.target
-
-- name: Configure automatic graphical login for the jumpbox
-  ansible.builtin.copy:
-    dest: /etc/lightdm/lightdm.conf.d/50-jumpbox.conf
-    mode: "0644"
-    content: |
-      [Seat:*]
-      autologin-user=vagrant
-      user-session=xfce
-
-- name: Set LightDM as the default display manager
-  ansible.builtin.copy:
-    dest: /etc/X11/default-display-manager
-    mode: "0644"
-    content: |
-      /usr/sbin/lightdm
-
-- name: Reset graphical login failure state
-  ansible.builtin.command: systemctl reset-failed lightdm
-  changed_when: false
-
-- name: Enable graphical login
-  ansible.builtin.service:
-    name: lightdm
-    enabled: true
-    state: started
 
 - name: Create lab tool workspace
   ansible.builtin.file:

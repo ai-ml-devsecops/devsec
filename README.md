@@ -9,7 +9,7 @@ This repository defines a disposable four-node DevSecOps training lab running na
 | `gitlab` | **SCM & CI/CD** | Source code, Pipelines, Registry | GitLab CE |
 | `runner` | **Worker** | Executes CI/CD jobs | GitLab Runner |
 | `app` | **Target** | Vulnerable Django Application | django.nv |
-| `jumpbox` | **Workstation** | Security testing & management | Docker Tools |
+| `jumpbox` | **Headless controller** | Security testing & management over SSH | Ansible, CLI tools |
 
 ## Setup & Execution Guide
 
@@ -38,24 +38,19 @@ start. Two switches control this:
 
 ### Restart a timed-out jumpbox
 
-If `vagrant ssh jumpbox` hangs and the VMware console is black and unresponsive,
-the entire guest is frozen. Press `Ctrl+C`, then force-restart only the jumpbox:
+If `vagrant ssh jumpbox` hangs, press `Ctrl+C`, then force-restart only the jumpbox:
 ```powershell
 .\scripts\Start-Lab.ps1 -RestartJumpbox
 ```
 
-This does not restore or restart GitLab, runner, or app. No GUI login or interaction
-is required for the jumpbox to remain running.
+This does not restore or restart GitLab, runner, or app. The jumpbox runs without
+a VMware window, desktop, display manager, or browser. Manage it through SSH and
+open the GitLab and application URLs in your Windows browser.
 
 Check connectivity:
 ```powershell
 vagrant status jumpbox
 vagrant ssh jumpbox -c "hostname; hostname -I"
-```
-
-Only if SSH works and the desktop alone is black, restart the display manager:
-```powershell
-vagrant ssh jumpbox -c "sudo systemctl restart lightdm"
 ```
 
 ### 3. Lab Ingress & Credentials
