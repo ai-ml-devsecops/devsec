@@ -5,12 +5,11 @@ It is not installed, included by another pipeline, or wired into Ansible.
 
 ## Before running
 
-- Enable and expose GitLab's container registry. The current lab provisioning does
-  not configure an external registry endpoint. Confirm the project exposes
-  `CI_REGISTRY` and `CI_REGISTRY_IMAGE` and both the DinD daemon and app VM can
-  reach it. Use trusted TLS; a private CA must be trusted by both daemons.
-  An HTTP-only registry requires explicit insecure-registry configuration on both
-  daemons, which this template does not supply.
+- Provisioning configures GitLab's registry at `http://<gitlab-ip>:5050`, publishes
+  port 5050, and enables the project registry. DinD and the app VM are configured
+  to use this HTTP endpoint as an insecure registry. This is for the isolated lab
+  only: registry credentials are not protected by TLS on the lab network. Use a
+  trusted TLS certificate and CA configuration instead for production.
 - The application's repository root must contain its working Dockerfile.
 - The registered runner needs the privileged Docker executor for DinD.
 - Authorize a dedicated deployment public key for the app VM's `vagrant` user.
@@ -71,8 +70,8 @@ After reviewing the manual workflow, consider scripts under `scripts/gitlab/` th
 5. Trigger and monitor a pipeline only through a separate explicit command.
 
 API-triggered runs would require an intentional change to the template's workflow
-rules (currently UI-only). Registry service setup, SSH authorization, and Docker
-daemon trust remain host configuration tasks; project API calls cannot replace them.
+rules (currently UI-only). Registry endpoint and Docker daemon configuration are
+host provisioning tasks; API bootstrap cannot replace that host configuration.
 Review the existing bootstrap script before reuse: it also imports a project,
 enables Auto DevOps, and can create runners, so it is broader than this workflow.
 

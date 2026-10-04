@@ -172,16 +172,23 @@ class GitLabApi:
                     "visibility": "public",
                     "import_url": self.settings.source_url,
                     "auto_devops_enabled": True,
+                    "container_registry_access_level": "enabled",
                 },
                 expected=(201,),
             )
-        elif not project.get("auto_devops_enabled"):
-            project = self.request(
-                "PUT",
-                f"projects/{project['id']}",
-                body={"auto_devops_enabled": True},
-                expected=(200,),
-            )
+        else:
+            changes = {}
+            if not project.get("auto_devops_enabled"):
+                changes["auto_devops_enabled"] = True
+            if project.get("container_registry_access_level") != "enabled":
+                changes["container_registry_access_level"] = "enabled"
+            if changes:
+                project = self.request(
+                    "PUT",
+                    f"projects/{project['id']}",
+                    body=changes,
+                    expected=(200,),
+                )
         return project
 
     def wait_for_import(self, project: dict[str, Any]) -> dict[str, Any]:
