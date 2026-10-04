@@ -9,6 +9,24 @@
       - openssl
     state: present
 
+- name: Configure Docker to allow the lab registry over HTTP
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {
+        "insecure-registries": ["{{ hostvars['gitlab']['ansible_host'] }}:5050"]
+      }
+  register: app_docker_registry_config
+
+- name: Restart Docker after registry configuration changes
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+  when: app_docker_registry_config.changed
+
 - name: Create application workspace
   ansible.builtin.file:
     path: /opt/devsecops-app
