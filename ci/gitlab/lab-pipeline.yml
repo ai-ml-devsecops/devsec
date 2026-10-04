@@ -11,6 +11,7 @@ default:
   services:
     - name: docker:24.0.5-dind
       alias: docker
+      command: ["--insecure-registry=192.168.26.0/24"]
   before_script:
     - docker info
 

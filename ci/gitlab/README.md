@@ -37,8 +37,8 @@ do not put credentials into this file. Never commit the private key.
 1. Copy the template into the application's `.gitlab-ci.yml` through GitLab's UI.
 2. Validate it in GitLab's pipeline editor / CI Lint before committing.
 3. Commit it to the default branch.
-4. Select **Run pipeline** on that branch. The workflow deliberately excludes
-   push, merge request, schedule, and API triggers for now.
+4. For a build-only check, temporarily set `prod` to `when: manual` in the project copy. Confirm the build pushes the image, then restore the job and run a full pipeline to test deploy and scans.
+   The workflow excludes push, merge request, schedule, and API triggers for now.
 
 The pipeline builds and pushes a commit-tagged image, pulls it onto the app VM,
 replaces `devsecops-django`, waits for HTTP readiness, then runs the three scans.
