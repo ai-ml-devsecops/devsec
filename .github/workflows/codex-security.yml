@@ -1,0 +1,89 @@
+name: Codex Security
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    # Secrets are not exposed to fork or Dependabot PRs, so skip them.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]' &&
+       github.event.pull_request.draft == false)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    env:
+      CODEX_SECURITY_VERSION: "0.1.27"
+      # Report-only by default. Set to "high" to fail on high/critical findings.
+      FAIL_ON_SEVERITY: ""
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Codex Security
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/codex-security-cli" \
+            --ignore-scripts --no-audit --no-fund \
+            "@openai/codex-security@$CODEX_SECURITY_VERSION"
+          echo "$RUNNER_TEMP/codex-security-cli/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan
+        id: scan
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          args=(scan "$GITHUB_WORKSPACE" --mode standard --effort high
+                --output-dir "$RUNNER_TEMP/codex-security-scan" --json)
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            args+=(--diff "$BASE_SHA")
+          fi
+          if [[ -n "$FAIL_ON_SEVERITY" ]]; then
+            args+=(--fail-on-severity "$FAIL_ON_SEVERITY")
+          fi
+          scan_status=0
+          codex-security "${args[@]}" > "$RUNNER_TEMP/codex-security-result.json" || scan_status=$?
+          echo "exit-code=$scan_status" >> "$GITHUB_OUTPUT"
+          exit "$scan_status"
+
+      # Exit 1 = severity policy violation (scan completed); 2+ = incomplete, don't upload.
+      - name: Export SARIF
+        id: sarif
+        if: ${{ !cancelled() && (steps.scan.outputs.exit-code == '0' || steps.scan.outputs.exit-code == '1') }}
+        run: |
+          codex-security export "$RUNNER_TEMP/codex-security-scan" \
+            --export-format sarif \
+            --source-root "$GITHUB_WORKSPACE" \
+            --output "$RUNNER_TEMP/codex-security.sarif"
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: ${{ !cancelled() && steps.sarif.outcome == 'success' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ runner.temp }}/codex-security.sarif
+          category: codex-security/${{ github.event_name == 'pull_request' && 'diff' || 'full' }}

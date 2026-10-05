@@ -105,3 +105,8 @@ new laptop, create a new SSH key, authorize its public key for the app VM's
 the GitLab project file variables `PROD_SSH_PRIVKEY` and `SSH_KNOWN_HOSTS`.
 Leave both variables unprotected when using the default `main` branch unless
 that branch is configured as protected.
+
+## Codex Security Scan (GitHub Actions)
+
+`.github/workflows/codex-security.yml` runs Codex Security on PRs (diff) and manual runs (full repo) and uploads SARIF to GitHub Code Scanning.
+Setup: add an `OPENAI_API_KEY` repository secret and enable Code Scanning. Set `FAIL_ON_SEVERITY: "high"` in the workflow to make findings fail the check.
