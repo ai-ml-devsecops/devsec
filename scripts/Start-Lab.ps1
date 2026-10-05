@@ -5,7 +5,9 @@ param(
     # Revert to the last known-good snapshot even if the lab is already running.
     [switch]$Reset,
     # Restart only the jumpbox instead of restoring every lab VM.
-    [switch]$RestartJumpbox
+    [switch]$RestartJumpbox,
+    # Save the current VM state as the normal startup snapshot.
+    [switch]$RefreshSnapshot
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,8 +17,12 @@ $labNodes = @("gitlab", "runner", "app")
 $snapshotName = "initial-ready"
 $remoteRoot = "/opt/devsecops-lab"
 
-if ($RestartJumpbox -and ($Rebuild -or $Reset)) {
-    throw "-RestartJumpbox cannot be combined with -Rebuild or -Reset."
+if (($RestartJumpbox -or $RefreshSnapshot) -and ($Rebuild -or $Reset)) {
+    throw "-RestartJumpbox/-RefreshSnapshot cannot be combined with -Rebuild or -Reset."
+}
+
+if ($RestartJumpbox -and $RefreshSnapshot) {
+    throw "-RestartJumpbox cannot be combined with -RefreshSnapshot."
 }
 
 function Get-NodeIp([string]$Node) {
@@ -38,6 +44,20 @@ function Restore-Lab {
         & vagrant snapshot restore $node $snapshotName
         if ($LASTEXITCODE -ne 0) { throw "Failed to restore snapshot for '$node'." }
     }
+}
+
+function Refresh-Snapshots {
+    Write-Host "Saving the current lab state as '$snapshotName'..." -ForegroundColor Cyan
+    & vagrant up --provider=vmware_desktop
+    if ($LASTEXITCODE -ne 0) { throw "vagrant up failed." }
+    & vagrant halt -f
+    if ($LASTEXITCODE -ne 0) { throw "Failed to halt the lab before snapshotting." }
+    foreach ($node in $nodes) {
+        & vagrant snapshot save $node $snapshotName --force
+        if ($LASTEXITCODE -ne 0) { throw "Failed to refresh snapshot for '$node'." }
+    }
+    & vagrant up --provider=vmware_desktop
+    if ($LASTEXITCODE -ne 0) { throw "vagrant up failed after snapshotting." }
 }
 
 function Invoke-FullProvision {
@@ -122,6 +142,9 @@ try {
         Write-Host "Force-restarting only the jumpbox..." -ForegroundColor Cyan
         & vagrant reload jumpbox -f
         if ($LASTEXITCODE -ne 0) { throw "The jumpbox restart failed." }
+    }
+    elseif ($RefreshSnapshot) {
+        Refresh-Snapshots
     }
     elseif ($Rebuild) {
         Write-Host "Destroying existing VMs for a clean rebuild..." -ForegroundColor Yellow

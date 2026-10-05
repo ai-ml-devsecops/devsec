@@ -77,3 +77,31 @@ sudo docker run --rm hysnsec/nikto -h http://<app-ip>:8000
 ## Environment Management
 *   **Stop Workloads:** `vagrant halt`
 *   **Wipe Lab Infrastructure:** `vagrant destroy -f`
+
+## Preserving the lab across restarts
+
+`Start-Lab.ps1` normally restores the `initial-ready` snapshot. After a
+successful rebuild or any intentional VM-side configuration change, refresh
+that snapshot once:
+
+```powershell
+.\scripts\Start-Lab.ps1 -RefreshSnapshot
+```
+
+After that, shutdowns and normal startups preserve the working configuration:
+
+```powershell
+.\scripts\Start-Lab.ps1
+```
+
+On a different laptop, clone the repository, install the host dependencies,
+then run `Start-Lab.ps1 -Rebuild` once. The checked-in Ansible configuration
+recreates the GitLab registry, runner, app Docker registry settings, and lab
+network. Run `-RefreshSnapshot` after the rebuild.
+
+Deployment credentials are intentionally not portable repository files. On a
+new laptop, create a new SSH key, authorize its public key for the app VM's
+`vagrant` user, and add the matching private key and verified app host key as
+the GitLab project file variables `PROD_SSH_PRIVKEY` and `SSH_KNOWN_HOSTS`.
+Leave both variables unprotected when using the default `main` branch unless
+that branch is configured as protected.

@@ -5,3 +5,4 @@ gitlab-registration.json
 __pycache__/
 *.py[cod]
 ansible/inventory/runtime.yml
+.vscode/
