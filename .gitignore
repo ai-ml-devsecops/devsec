@@ -6,3 +6,4 @@ __pycache__/
 *.py[cod]
 ansible/inventory/runtime.yml
 .vscode/
+embed_nikto_sslyze.md

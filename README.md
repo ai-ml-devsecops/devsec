@@ -71,8 +71,12 @@ Establish a session on your attack node to test the application target using con
 vagrant ssh jumpbox
 
 # Inside Jump Box container execution test:
-sudo docker run --rm hysnsec/nikto -h http://<app-ip>:8000
+docker run --rm hysnsec/nikto -h http://<app-ip>:8000
 ```
+
+Docker is installed and enabled automatically on the jump box. If Docker was
+added after the current VM snapshot was created, run `.\scripts\Start-Lab.ps1 -Rebuild`
+once to reprovision the node and refresh the snapshot.
 
 ## Environment Management
 *   **Stop Workloads:** `vagrant halt`

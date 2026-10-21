@@ -8,9 +8,22 @@
       - python3-pip
       - jq
       - ansible-core
+      - docker.io
     state: present
   environment:
     DEBIAN_FRONTEND: noninteractive
+
+- name: Enable and start Docker on the jumpbox
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Allow the vagrant user to run Docker without sudo
+  ansible.builtin.user:
+    name: vagrant
+    groups: docker
+    append: true
 
 - name: Read the default boot target
   ansible.builtin.command: systemctl get-default

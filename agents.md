@@ -2,8 +2,8 @@
 
 This document provides step-by-step instructions to initialize a clean Windows 11 host environment and deploy your local four-node training lab using VMware.
 
-## Response Style
-Be brief when possible, but try to address every user question. Include steps to reproduce.
+## Chat Response Style
+Be brief, though try to address every user question. Include steps to reproduce. Do not provide diagrams unless specifically requested.
 
 ## Coding And Commit Style
 Break down features to minimal testable commits as provided in response style. Notify the user if commits will occur in more than 3 files or more than 2 seperate directories. Make any necessary edits to readme files together along with any commits they belong to. 
