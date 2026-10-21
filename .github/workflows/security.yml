@@ -1,0 +1,178 @@
+name: Security baseline
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    # Public repositories can use code scanning at no charge. For a private
+    # repository, opt in only when Code Security is licensed and enabled.
+    if: ${{ github.event.repository.private == false || vars.ENABLE_PRIVATE_CODEQL == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, ruby]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Analyze source
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  repository-scans:
+    name: Open-source repository scans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Scan dependencies, secrets, and configuration (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, known-safe release
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: "0"
+
+      - name: Install pinned Checkov
+        run: |
+          python3 -m venv "$RUNNER_TEMP/checkov"
+          "$RUNNER_TEMP/checkov/bin/python" -m pip install --disable-pip-version-check -r GH/requirements-scan.txt
+
+      - name: Scan infrastructure and workflow configuration (Checkov)
+        run: |
+          mkdir -p checkov-results
+          "$RUNNER_TEMP/checkov/bin/checkov" --directory . --framework all --soft-fail --output sarif --output-file-path checkov-results
+
+      - name: Keep scan reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: security-scan-reports-${{ github.run_id }}
+          path: |
+            trivy-results.sarif
+            checkov-results/results_sarif.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  container-images:
+    name: Container image scan (${{ matrix.image }})
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - gitlab/gitlab-ce:17.11.6-ce.0
+          - gitlab/gitlab-runner:v17.11.0
+          - docker:24.0.5-cli
+          - alpine:3.21
+    steps:
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, known-safe release
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          scanners: vuln,secret
+          format: sarif
+          output: trivy-image-${{ strategy.job-index }}.sarif
+          exit-code: "0"
+
+      - name: Keep image report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-scan-${{ strategy.job-index }}-${{ github.run_id }}
+          path: trivy-image-${{ strategy.job-index }}.sarif
+          if-no-files-found: ignore
+          retention-days: 14
+
+  publish-repository-findings:
+    name: Publish repository findings
+    needs: repository-scans
+    if: >-
+      (github.event.repository.private == false || vars.ENABLE_PRIVATE_CODEQL == 'true') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Download scan reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: security-scan-reports-${{ github.run_id }}
+          path: scan-results
+
+      - name: Publish Trivy findings
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: scan-results/trivy-results.sarif
+          category: trivy
+
+      - name: Publish Checkov findings
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: scan-results/checkov-results/results_sarif.sarif
+          category: checkov
+
+  publish-image-findings:
+    name: Publish image findings
+    needs: container-images
+    if: >-
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (github.event.repository.private == false || vars.ENABLE_PRIVATE_CODEQL == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0, 1, 2, 3]
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Download image report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-scan-${{ matrix.index }}-${{ github.run_id }}
+          path: image-result
+
+      - name: Publish image findings
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: image-result/trivy-image-${{ matrix.index }}.sarif
+          category: trivy-image-${{ matrix.index }}
