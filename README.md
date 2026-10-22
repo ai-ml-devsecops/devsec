@@ -82,6 +82,9 @@ once to reprovision the node and refresh the snapshot.
 *   **Stop Workloads:** `vagrant halt`
 *   **Wipe Lab Infrastructure:** `vagrant destroy -f`
 
+For a separate, persistent Dependabot Core development VM, see
+[dependabot-lab/README.md](dependabot-lab/README.md).
+
 ## Preserving the lab across restarts
 
 `Start-Lab.ps1` normally restores the `initial-ready` snapshot. After a
