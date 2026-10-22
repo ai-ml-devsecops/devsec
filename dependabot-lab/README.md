@@ -31,6 +31,14 @@ git rev-parse HEAD
 bin/docker-dev-shell go_modules
 ```
 
+On later logins, run `bin/docker-dev-shell` from the checkout root. If your
+prompt ends in `~/dependabot-core/dry-run`, return to the root first:
+
+```bash
+cd ~/dependabot-core
+bin/docker-dev-shell go_modules
+```
+
 The first development-shell run downloads or builds large Docker images and can
 take a while. It mounts the checkout into the container, so Ruby source edits in
 the VM are visible on the next run. At the `[dependabot-core-dev]` prompt, run
