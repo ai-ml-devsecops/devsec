@@ -58,6 +58,19 @@ Save the checkout SHA, command, and log together when comparing decisions. For
 private repositories, use a token with only the access needed for the target
 repository; do not put it in the checkout or a logged command.
 
+For the private `ai-ml-devsecops/devsec` repository, open the GitHub token
+form from the Windows repository root:
+
+```powershell
+.\GH\web-automation\Open-DependabotTokenPage.ps1
+```
+
+The script only opens GitHub's fine-grained token form and prints what to
+select. Choose **Only select repositories** and `devsec`; confirm **Contents:
+Read-only**. Generate the token, then paste it at the waiting `GitHub token:`
+prompt in the Ubuntu VM. The VM command saves it at
+`~/.config/dependabot/github-token` with mode `600`.
+
 ## VS Code from Windows
 
 From `dependabot-lab` in PowerShell, generate the SSH configuration after the VM
