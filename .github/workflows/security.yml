@@ -136,14 +136,14 @@ jobs:
 
       - name: Publish Trivy findings
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: scan-results/trivy-results.sarif
           category: trivy
 
       - name: Publish Checkov findings
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: scan-results/checkov-results/results_sarif.sarif
           category: checkov
@@ -172,7 +172,7 @@ jobs:
 
       - name: Publish image findings
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: image-result/trivy-image-${{ matrix.index }}.sarif
           category: trivy-image-${{ matrix.index }}
