@@ -1,6 +1,6 @@
 # DevSecOps Training Lab
 
-This repository defines a disposable four-node DevSecOps training lab running natively over VMware Workstation Pro.
+This repository defines a disposable DevSecOps training lab running natively over VMware Workstation Pro.
 
 ## Lab Topology
 
@@ -10,6 +10,12 @@ This repository defines a disposable four-node DevSecOps training lab running na
 | `runner` | **Worker** | Executes CI/CD jobs | GitLab Runner |
 | `app` | **Target** | Vulnerable Django Application | django.nv |
 | `jumpbox` | **Headless controller** | Security testing & management over SSH | Ansible, CLI tools |
+| `jenkins` | **Legacy CI/CD** | Separate CI controller | Jenkins, rootless Podman |
+
+On the `legacy-jenkins` branch, start the four service VMs and power off the
+provisioning jumpbox with `powershell -NoProfile -ExecutionPolicy Bypass -File
+.\scripts\Provision-Jenkins.ps1`. Jenkins is available at
+`http://<jenkins-ip>:8080`; see [Jenkins setup](ci/jenkins/README.md).
 
 ## Setup & Execution Guide
 
