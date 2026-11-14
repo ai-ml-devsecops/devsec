@@ -19,11 +19,16 @@ Vagrant.configure("2") do |config|
     "gitlab"  => { memory: 8192, cpus: 4 }, # Shifted resources here for heavy DB operations
     "runner"  => { memory: 5120, cpus: 4 }, # Extra RAM to run heavy ZAP scans safely
     "app"     => { memory: 4096, cpus: 1 }, # Headroom for Django test suites
-    "jumpbox" => { memory: 4096, cpus: 2 }  # Headless SSH and Ansible controller
+    "jumpbox" => { memory: 4096, cpus: 2 }, # Provisioning controller; halt after setup
+    "jenkins" => { memory: 4096, cpus: 2 }  # Separate legacy CI controller
   }
 
   nodes.each do |name, resources|
     config.vm.define name do |node|
+      if name == "jenkins"
+        node.vm.box = "bento/ubuntu-24.04"
+        node.vm.provision "shell", path: "scripts/provision-jenkins.sh"
+      end
       node.vm.hostname = name
       node.vm.network "private_network", type: "dhcp"
       
